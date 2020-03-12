@@ -1,80 +1,108 @@
+// name:    zombieDice
+// author:  johnny
+// version: 2018/10/09 19:30	complete rewrite
+// notes:	actual gameplay still not done.
+//			currently, only completed logic for rolls, die, color, face, and scoring
+//			!!!!!	next step.. convert to prepopulated roll var to a slice
+//					and remove an element when it becomes brain or shotgun
+//					also.. adjust the min/max of the slice dynamically for the for/next to work properly
 package main
 
 import "fmt"
-import "math/rand"
+import "math/rand"								// for random numbers
+import "time"									// for random seed
 
+
+//	MAIN	=========================================================
 func main() {
-	var dieColor int // temp die.  contains die color
-	var roll int     //
-	//	var rollSide int // the side 1-6 of the die that was rolled
-	var diceInHand int = 0
-	var rollResults [3]int // holds  3 results of rolled die
+//	CONSTANTS =======================================================
+	const brain int = 0							// index for brain
+	const shotgun int = 1						// index for shotgun
+	const runner int = 2						// index for runner
+	const green int = 0							// index for green
+	const yellow int = 1						// index for yellow
+	const red int = 2							// index for red
 
-	//	var dice int = 0
-	var diceInCup int
-	//	var rollOne int = 0
-	//	var rollTwo int = 0
-	//	var rollThree int = 0
+//	VARS	=========================================================
+//			informational vars
+//
 
-	var brain int = 0   // index for brain
-	var shotgun int = 1 // index for shotgun
-	var runner int = 2  // index for runner.  note: this is last (for void dice reduction)
-	//	var greenDieQty int = 6
-	//	var yellowDieQty int = 4
-	//	var redDieQty int = 3
-	//	var greenDie int = 0
-	//	var yellowDie int = 1
-	//	var redDie int = 2
-	//      [0]=num of green  [1]=num of yellow  [2]=num of red
-	var differentDiceColors [3]int
-	differentDiceColors[brain] = 6
-	differentDiceColors[shotgun] = 3
-	differentDiceColors[runner] = 4
+	dieColorName := make([]string, 3)	// color names for the dice		fyi 'make' creates a slice. ie this is a slice
+	dieColorName[green] = "Green"
+	dieColorName[yellow] = "Yellow"
+	dieColorName[red] = "Red"
 
-	var resultTotals [3]int
-	resultTotals[brain] = 0   // how many brains can you eat ;-)
-	resultTotals[shotgun] = 0 // max shotgun hits you can receive
-	resultTotals[runner] = 0  // just for stats.. doesnt affect game outcome
-
-	//	var cupOfDice [13]int
-
-	//	var brainsEaten int = 0
-	//	var shotgunBlasts int = 0
-	//	var shotgunBlastsMax int = 2 // max = 3  or  0-2
-
-	dieFace := make([]string, 4)
+	dieFace := make([]string, 3)
 	dieFace[brain] = "Brain"
 	dieFace[runner] = "Runner"
 	dieFace[shotgun] = "SHOTGUN"
-	dieFace[3] = "JOHNNYTEST"
 
-	//rows green=0, yellow=1, red=2
 	dieSides := [][]int{}
 	greenDieSides := []int{brain, brain, brain, runner, runner, shotgun}
 	yellowDieSides := []int{brain, brain, runner, runner, shotgun, shotgun}
 	redDieSides := []int{brain, runner, runner, shotgun, shotgun, shotgun}
-	dieSides = append(dieSides, greenDieSides)
+	dieSides = append(dieSides, greenDieSides)			// presume that first append is at index 0 which is green
 	dieSides = append(dieSides, yellowDieSides)
 	dieSides = append(dieSides, redDieSides)
 
-	diceInCup = 13
-	diceInHand = 0
-	for diceInCup > 0 && resultTotals[shotgun] < 3 {
-		if diceInHand < 3 {
-			dieColor = rand.Intn(3)                // is the die green,yellow, or red
-			if differentDiceColors[dieColor] > 0 { //  we can only continue if there was that color of die still avail
-				diceInCup--                     // take a die out of the cup ONLY if that color still exists in cup
-				diceInHand++                    // now you have x of 3
-				differentDiceColors[dieColor]-- //   yes.. color was still in cup, so reduce num of that color avail
-				//		roll=rand.Intn(6)			// roll it and get a side.
-				roll = dieSides[dieColor][rand.Intn(6)] // did the color/side result in brain,run,shot
-				resultTotals[roll]++                    // increment the stats
-				rollResults[diceInHand] = roll          // keep 3 results..
-				if roll < runner {
-					//  need something here
-				}
-				fmt.Println("diceincup: ", diceInCup, " diceinhand: ", diceInHand, ", rolled: ", dieFace[roll], " .")
-			}
+
+//			game prep vars
+//
+	var dieInCup int						// how many dice in cup
+	var dieOutOfPlay int					// how many dice (shotguns/brains) that are now out of play
+	dieOrder := make([]int, 13)				// the prepopulated random order of dice pulled from the bag
+	var dieColor int						// color picked from cup during the setup
+
+	var diceQuantity [3]int
+	diceQuantity[green] = 6					// there are initially six green die in the bag
+	diceQuantity[yellow] = 4				// there are initially four yellow die in the bag
+	diceQuantity[red] = 3					// there are initially three red die in the bag
+
+//			normal vars
+//
+	var x int								// misc var
+	var y int								// misc var
+	var rolld6 int
+
+	var score [3]int
+	score[brain] = 0   // how many brains can you eat ;-)
+	score[shotgun] = 0  // just for stats.. doesnt affect game outcome
+	score[runner] = 0 // max shotgun hits you can receive
+
+
+//	INIT	=========================================================
+fmt.Println("len of dieOrder: ", len(dieOrder), ", ", cap(dieOrder))
+	dieInCup = len(dieOrder)
+	dieOutOfPlay = 13 - dieInCup
+	rand.Seed(time.Now().UnixNano())
+
+	// titles
+	fmt.Println("\n\nZombie Dice")
+	fmt.Println("=============================================================")
+	//	prepopulate the random dice order ie. the order that dice will be pulled from the cup
+	x=0
+	for x < dieInCup {
+		dieColor = rand.Intn(3)
+		if diceQuantity[dieColor] > 0 {				// if there is still THIS-COLOR remaining
+			dieOrder[x]=dieColor					// prepoulate
+			x+=1									//
+			diceQuantity[dieColor]-=1				// reduce THIS-COLOR by one
 		}
 	}
+
+	//	MAIN	=========================================================
+	y = 0
+	for y < dieInCup {
+		rolld6 = rand.Intn(6)						// roll me a die
+		score[dieSides[dieOrder[y]][rolld6]]+=1		// change the current-round score for this particular die roll
+		fmt.Printf("die %2d - %-6s %-7s   score (brains:%2d  shotguns:%2d  runners:%2d    dieInCup: %2d , outOfPlay: %2d)\n", y+1, dieColorName[dieOrder[y]], dieFace[dieSides[dieOrder[y]][rolld6]], score[brain], score[shotgun], score[runner], dieInCup, dieOutOfPlay )
+		y+=1
+		if score[shotgun] >= 3 {
+			fmt.Println("You have been DESTROYED!")
+			fmt.Printf("\tyou had (brains:%2d  shotguns:%2d  runners:%2d)\n", score[brain], score[shotgun], score[runner] )
+			y=99
+		}
+	}
+	fmt.Println("\n\n")
 }
+//	END		=========================================================
