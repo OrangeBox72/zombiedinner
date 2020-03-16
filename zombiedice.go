@@ -3,14 +3,8 @@
 // version: 2020/03/12. WIP
 // references:
 //    global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
-// DELTHIS//    ansi colors.  https://gist.github.com/ik5/d8ecde700972d4378d87
 // notes: actual gameplay still not done.
 //   * 2020-03-12 - started using ANSI colors.. but they mess up printf formatting, so i have to pad spaces on the colored variables.
-//   * old notes
-//     currently, only completed logic for rolls, die, color, face, and scoring
-//     !!!!! next step.. convert to prepopulated roll var to a slice
-//       and remove an element when it becomes brain or shotgun
-//       also.. adjust the min/max of the slice dynamically for the for/next to work properly
 package main
 
 import "fmt"
@@ -28,14 +22,6 @@ const yellow int = 1                                                   // index 
 const red int = 2                                                      // index for red
 const totalNumberOfDice = 13                                           // total # of die
 
-//const greenDie string =  "\033[38;5;0m\033[48;5;2mg\033[39;49m"
-//const yellowDie string = "\033[38;5;0m\033[48;5;3my\033[39;49m"
-//const redDie string =    "\033[38;5;0m\033[48;5;1mr\033[39;49m"
-
-//const brainResult string   = "\033[38;5;0m\033[48;5;2mB\033[39;49m"
-//const runnerResult string  = "\033[38;5;0m\033[48;5;3mR\033[39;49m"
-//const shotgunResult string = "\033[38;5;0m\033[48;5;1mS\033[39;49m"
-
 const greenBrain string     = "\033[38;5;15m\033[48;5;2mB\033[39;49m"
 const greenRunner string    = "\033[38;5;15m\033[48;5;2mR\033[39;49m"
 const greenShotgun string   = "\033[38;5;0m\033[48;5;2mS\033[39;49m"
@@ -45,16 +31,22 @@ const yellowShotgun string  = "\033[38;5;0m\033[48;5;3mS\033[39;49m"
 const redBrain string       = "\033[38;5;15m\033[48;5;1mB\033[39;49m"
 const redRunner string      = "\033[38;5;15m\033[48;5;1mR\033[39;49m"
 const redShotgun string     = "\033[38;5;0m\033[48;5;1mS\033[39;49m"
+//
+const greenDie string       = "\033[38;5;15m\033[48;5;2mG\033[39;49m"
+const yellowDie string      = "\033[38;5;15m\033[48;5;3mY\033[39;49m"
+const redDie string         = "\033[38;5;15m\033[48;5;1mR\033[39;49m"
 
+// NOTE: because of ANSI-Color escape sequences and printf..   1         2         3
+//       you have to space out extra spaces (to 32).  12345678901234567890123456789012
+const msgYouWereShotgunned string      = "\033[38;5;1mYou have been DESTROYED!        \033[38;5;4m"
+const msgYouSurvivedAnotherDay string  = "\033[38;5;2mYou're a really AWESOME Zombie! \033[38;5;4m"
 
-var rolld6 int
 
 // VARS ----------------------------------------------------------------
+var rolld6 int
 var x int                                                              // misc var
 var y int                                                              // misc var
 var color int      // color picked from cup during the setup
-//var colorName []string                                                 // die color description
-//var faceName []string                                                  // die face description
 var dieSides [][]int                                                   // two dimensional array listing all possible sides for each colored dice
 var iconSides [][]string
 var myScore []int
@@ -66,48 +58,38 @@ var brainTally int
 var runnerTally int
 var shotgunTally int
 var rollCount int
-
-//var (
-//  Black   = Color("\033[38;5;0m%s\033[39;49m")
-//  Red     = Color("\033[38;5;1m%s\033[39;49m")
-//  Green   = Color("\033[38;5;2m%s\033[39;49m")
-//  Yellow  = Color("\033[38;5;3m%s\033[39;49m")
-//  Blue    = Color("\033[38;5;4m%s\033[39;49m")
-//  Magenta = Color("\033[38;5;5m%s\033[39;49m")
-//  Teal    = Color("\033[38/5;6m%s\033[39;49m")
-//  White   = Color("\033[38;5;7m%s\033[39;49m")
-//)
-//var BorderColor = Blue
+var gameState bool
 
 var (
   ansiReset  = "\033[39;49m"
-//  ansiGreen  = "\033[38;5;2m"
-//  ansiYellow = "\033[38;5;3m"
-//  ansiRed    = "\033[38;5;1m"
+  ansiGreen  = "\033[38;5;2m"
+  ansiRed    = "\033[38;5;1m"
   ansiBlue   = "\033[38;5;4m"
+//  ansiYellow = "\033[38;5;3m"
 )
-//var (
-//  ansiGreenBG   = "\033[38;5;0m\033[48;5;2m"
-//  ansiYellowBG  = "\033[38;5;0m\033[48;5;3m"
-//  ansiRedBG     = "\033[38;5;0m\033[48;5;1m"
-//)
 
 
 // FUNCTIONS ===========================================================
+func debuga(msg string, s []int) {
+  var v int
+  var dieColors [3]string
+
+  dieColors[0]=greenDie
+  dieColors[1]=yellowDie
+  dieColors[2]=redDie
+
+  fmt.Printf("dbg:%-10s  len:[%02d] ",msg, len(s))
+  for _, v = range s {
+    fmt.Printf("%-2s ", dieColors[v])
+  }
+  fmt.Println("")
+}
 func printSlice(z int, s []int) {
-  fmt.Printf("z=%d :  len=%d    %#v      \n", z, len(s), s)
+  fmt.Printf("z=%d :  len=%d    %v      \n", z, len(s), s)
 }
 func printSlice2(z int, s [][]int) {
   fmt.Printf("z=%d :  len=%d    %#v      \n", z, len(s), s)
 }
-
-//func Color(colorString string) func(...interface{}) string {             // printing ansi colors (possibly not used)
-//  sprint := func(args ...interface{}) string {
-//    return fmt.Sprintf(colorString,
-//      fmt.Sprint(args...))
-//  }
-//  return sprint
-//}
 
 func randomizeDiceInCup(howManyDice int) (cup []int) {
   var diceColorsAvailable [3]int
@@ -140,14 +122,6 @@ func updateScore(score int, theScores []int) {
   }
 }
 
-//func getColorNames() []string {
-//  return []string{ansiGreenBG+"Green "+ansiReset, ansiYellowBG+"Yellow"+ansiReset, ansiRedBG+" Red  "+ansiReset}
-//}
-
-//func getFaceNames() []string {
-//  return []string{ansiGreen+"Brain  "+ansiReset, ansiYellow+"Runner "+ansiReset, ansiRed+"SHOTGUN"+ansiReset}
-//}
-
 func prepDieSides() [][]int {                                          // populate two dimensional array w/each die color and face
   var greenDieSides, yellowDieSides, redDieSides []int
   var ds [][]int
@@ -176,108 +150,120 @@ func prepIcons() [][]string {                                            // popu
 
 func rollResults(theRoll []int) {
   var rolld6 int
-  var v int
-//  var i int
+  var v int                                                            // the type of die being utilized (GREEN, YELLOW, RED)
+  var i int                                                            // index var:  current die being utilized
+  var d int                                                            // replacement die
   var resultVisual string
+  var tally [3]int                                                     // single roll tally (ie not accumlative)
+//  var replenishDie1, replenishDie2, replenishDie3 int      // number of die to replenish after roll (ie how many taken out of play)
 
+
+//  replenishDie1, replenishDie2, replenishDie3 = -1
   rollCount+=1
   fmt.Print(ansiBlue, "┃ ",ansiReset)
-  for _, v = range theRoll {
-    rolld6=rand.Intn(6)
-    switch dieSides[v][rolld6] {
-      case brain:   brainTally+=1
-      case runner:  runnerTally+=1
-      case shotgun: shotgunTally+=1
+// TEMP BELOW
+fmt.Print("\n")
+//TEMP ABOVE
+  for i, v = range theRoll {
+    rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
+    switch dieSides[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
+      // BRAIN --------------------------------------------------------
+      case brain:   {
+        brainTally+=1
+        tally[brain]+=1
+        myScore[brain]+=1
+fmt.Printf("roll-b: %1s\n", iconSides[v][rolld6])
+debuga("40-cup-b",myCup)
+debuga("40-hand-b",myHand)
+        myHand=append(myHand[:i], myHand[i+1:]...)                     // remove BRAIN from hand
+debuga("41-hand",myHand)
+        d=myCup[len(myCup)-1]                                          // and get another die from cup
+        myCup=myCup[:len(myCup)-1]
+        myHand=append(myHand, d)
+debuga("42-cup",myCup)
+debuga("42-hand",myHand)
+//  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
+        if len(myCup)==0 {gameState=false}
+      }
+      // RUNNER -------------------------------------------------------
+      case runner: {
+        runnerTally+=1
+        tally[runner]+=1
+      }
+      // SHOTGUN ------------------------------------------------------
+      case shotgun: {
+        shotgunTally+=1
+        tally[brain]+=1
+        myScore[shotgun]+=1
+fmt.Printf("roll-s: %1s\n", iconSides[v][rolld6])
+debuga("50-cup-s",myCup)
+debuga("50-hand-s",myHand)
+        myHand=append(myHand[:i], myHand[i+1:]...)                     // remove SHOTGUN from hand
+        if shotgunTally == 3 {
+          gameOutcome=msgYouWereShotgunned
+          gameState=false
+        }
+debuga("51-hand",myHand)
+        // , AND.. get another DIE from myCup
+        d=myCup[len(myCup)-1]                                          // and get another die from cup
+        myCup=myCup[:len(myCup)-1]
+        myHand=append(myHand, d)
+debuga("52-cup",myCup)
+debuga("52-hand",myHand)
+        //  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
+        if len(myCup)==0 {gameState=false}
+      }
+
     } //eoswitch
     resultVisual=resultVisual+iconSides[v][rolld6]
   } //eofor
   fmt.Printf("roll %02d: %-3s   tally: brains:%02d    runners:%02d    shotguns:%02d",rollCount, resultVisual, brainTally, runnerTally, shotgunTally)
   fmt.Print(ansiBlue, " ┃", ansiReset, "\n")
-
-//  tally=append(tally,brainTally)
-//  tally=append(tally,shotgunTally)
-
-
-//  fmt.Println(i) // dummy line to keep compiler from squawking that 'i' isnt used anywhere
-//  fmt.Printf("roll: %2d.\n",rolld6)
-
-
-//  switch score {
-//    case brain, runner, shotgun: {
-//      theScores[score]++
-//    }
-//  }
-
-
-
-// - %-6s %-7s   tally (brains:%2d  shotguns:%2d  runners:%2d    die in cup: %2d , outOfPlay: %2d)\n", y+1, colorName[myCup[y]], faceName[dieSides[myCup[y]][rolld6]], myScore[brain], myScore[shotgun], myScore[runner], numDieInCup, dieOutOfPlay )
-
 }
 
 // MAIN ===============================================================
 func main() {
+  var d1,d2,d3 int
 
-// var numDieInCup int                                                   // how many dice in cup
-// var dieOutOfPlay int                                                  // how many dice (shotguns/brains) that are now out of play
-
+  // INIT -------------------------------------------------------------
+  gameState=true
+  rand.Seed(time.Now().UnixNano())
+  myScore=resetScores()                                                // reset 3 scores (brains, runners, shotguns) to zeroes
+  dieSides=prepDieSides()
+  iconSides=prepIcons()
+  myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
   // Title ------------------------------------------------------------
   fmt.Print(ansiBlue)
   fmt.Print("┏━━━━━━━━━━━━━━━━┓\n")
   fmt.Print("┃  Zombie Dice   ┃\n")
   fmt.Print("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
   fmt.Print(ansiReset, "\n")
+  //
+debuga("20-cup",myCup)
+debuga("20-hand",myHand)
+  d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
+  myCup=myCup[:len(myCup)-1]
+  d2=myCup[len(myCup)-1]
+  myCup=myCup[:len(myCup)-1]
+  d3=myCup[len(myCup)-1]
+  myCup=myCup[:len(myCup)-1]
+  myHand=append(myHand, d1,d2,d3)                                      //   and place in hand for first roll
+debuga("21-cup",myCup)
+debuga("21-hand",myHand)
 
-  // INIT -------------------------------------------------------------
-  rand.Seed(time.Now().UnixNano())
-  myScore=resetScores()                                                // reset 3 scores (brains, runners, shotguns) to zeroes
-//  colorName=getColorNames()
-//  faceName=getFaceNames()
-  dieSides=prepDieSides()
-  iconSides=prepIcons()
-  // prepopulate the random dice order ie. the order that dice will be pulled from the cup
-  myCup = randomizeDiceInCup(totalNumberOfDice)
-
-
-//numDieInCup = len(myCup)
-//dieOutOfPlay = totalNumberOfDice - numDieInCup
-printSlice(22,myCup)
-printSlice(23,myHand)
-var a,b,c int
-a=myCup[len(myCup)-1]
-myCup=myCup[:len(myCup)-1]
-b=myCup[len(myCup)-1]
-myCup=myCup[:len(myCup)-1]
-c=myCup[len(myCup)-1]
-myCup=myCup[:len(myCup)-1]
-myHand=append(myHand,  a,b,c  )   // remove first die from cup and into hand
-printSlice(24,myCup)
-printSlice(25,myHand)
-
-rollResults(myHand)
+  for {
+    rollResults(myHand)
+    if !gameState {
+      break
+    }
+  }
 
 
+  if (len(myCup)==0 && shotgunTally<3) {
+    gameOutcome=msgYouSurvivedAnotherDay
+  }
 
-
-//os.Exit(22)
-
-  // MAIN -------------------------------------------------------------
-// y = 0
-// for y < numDieInCup {
-//  rolld6 = rand.Intn(6)      // roll me a die
-//  myScore[dieSides[myCup[y]][rolld6]]+=1  // change the current-round score for this particular die roll
-//  fmt.Printf(BorderColor("┃ "))
-//  fmt.Printf("die %2d - %-6s %-7s   tally (brains:%2d  shotguns:%2d  runners:%2d    die in cup: %2d , outOfPlay: %2d)\n", y+1, colorName[myCup[y]], faceName[dieSides[myCup[y]][rolld6]], myScore[brain], myScore[shotgun], myScore[runner], numDieInCup, dieOutOfPlay )
-//  y+=1
-//  if myScore[shotgun] >= 3 {
-//    gameOutcome=Red("You have been DESTROYED!")
-//   y=99
-//  }
-// }
-// if y==totalNumberOfDice {
-//   gameOutcome=Green("You're a really AWESOME Zombie!")
-// }
-
-  gameOutcome="johnny was here"
+//  gameOutcome="johnny was here"
   fmt.Print(ansiBlue)
   fmt.Print( "┣━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\n")
   fmt.Printf("┃  Stats         ┃ %-32s            ┃\n",gameOutcome)
