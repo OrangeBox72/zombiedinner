@@ -48,10 +48,11 @@ var x int                                                              // misc v
 var y int                                                              // misc var
 var color int      // color picked from cup during the setup
 var dieSides [][]int                                                   // two dimensional array listing all possible sides for each colored dice
-var iconSides [][]string
+var icon [][]string
 var myScore []int
 var myCup []int                                                        // dice in cup
-var myHand []int                                                       // dice in hand (current roll)
+var myLeftHand []int                                                       // dice in hand (current roll)
+var myRightHand []int                                                  // hand that temporarily holds dice that are not put out of play
 var outOfPlay []int                                                    // dice now out of play because of a shotgun roll
 var gameOutcome string
 var brainTally int
@@ -70,20 +71,36 @@ var (
 
 
 // FUNCTIONS ===========================================================
-func debuga(msg string, s []int) {
+func debuga(msg string, i int, s []int) {
+//  var v int
+  var dieColors [3]string
+
+  dieColors[0]=greenDie
+  dieColors[1]=yellowDie
+  dieColors[2]=redDie
+//  fmt.Printf("dbg:%-10s  i:%d  len:[%02d] ",msg, i, len(s))
+//  for _, v = range s {
+//    fmt.Printf("%-2s ", dieColors[v])
+//  }
+//  fmt.Println("")
+}
+
+func showCupContents(s []int) {
   var v int
   var dieColors [3]string
 
   dieColors[0]=greenDie
   dieColors[1]=yellowDie
   dieColors[2]=redDie
-
-  fmt.Printf("dbg:%-10s  len:[%02d] ",msg, len(s))
+  fmt.Print(ansiBlue, "┃ ",ansiReset, "random dice sequence: ")
   for _, v = range s {
     fmt.Printf("%-2s ", dieColors[v])
   }
-  fmt.Println("")
+  fmt.Print(ansiBlue, "             ┃", ansiReset, "\n")
 }
+
+
+
 func printSlice(z int, s []int) {
   fmt.Printf("z=%d :  len=%d    %v      \n", z, len(s), s)
 }
@@ -126,6 +143,18 @@ func prepDieSides() [][]int {                                          // popula
   var greenDieSides, yellowDieSides, redDieSides []int
   var ds [][]int
 
+
+//
+// TO GET MORE RANDOMNESS (???) change the BELOW sides to a more random series of values.. ie not b, b, b, r, r, s. --> b, r, s, b,...
+//
+//
+//
+//
+//
+//
+//
+//
+
   greenDieSides = []int{brain, brain, brain, runner, runner, shotgun}    // prep the sides of a green die
   yellowDieSides = []int{brain, brain, runner, runner, shotgun, shotgun} // prep the sides of a yellow die
   redDieSides = []int{brain, runner, runner, shotgun, shotgun, shotgun}  // prep the sides of a red die
@@ -152,71 +181,115 @@ func rollResults(theRoll []int) {
   var rolld6 int
   var v int                                                            // the type of die being utilized (GREEN, YELLOW, RED)
   var i int                                                            // index var:  current die being utilized
-  var d int                                                            // replacement die
   var resultVisual string
   var tally [3]int                                                     // single roll tally (ie not accumlative)
-//  var replenishDie1, replenishDie2, replenishDie3 int      // number of die to replenish after roll (ie how many taken out of play)
+  var rolledDieOnTable [3]int      // number of die to replenish after roll (ie how many taken out of play)
 
-
-//  replenishDie1, replenishDie2, replenishDie3 = -1
   rollCount+=1
   fmt.Print(ansiBlue, "┃ ",ansiReset)
 // TEMP BELOW
-fmt.Print("\n")
+//fmt.Print("\n")
 //TEMP ABOVE
   for i, v = range theRoll {
     rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
+//
+//
+// TEMP - DEBUG - all rolls are shotgun
+//rolld6=5
+//
+//
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// WILL BE CHANGING all these lines from  ....[v] to .....[i]
+//     205, 220
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     switch dieSides[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
       // BRAIN --------------------------------------------------------
       case brain:   {
         brainTally+=1
         tally[brain]+=1
         myScore[brain]+=1
-fmt.Printf("roll-b: %1s\n", iconSides[v][rolld6])
-debuga("40-cup-b",myCup)
-debuga("40-hand-b",myHand)
-        myHand=append(myHand[:i], myHand[i+1:]...)                     // remove BRAIN from hand
-debuga("41-hand",myHand)
-        d=myCup[len(myCup)-1]                                          // and get another die from cup
-        myCup=myCup[:len(myCup)-1]
-        myHand=append(myHand, d)
-debuga("42-cup",myCup)
-debuga("42-hand",myHand)
-//  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
+//WINNING
+//FOR NOW.. i will say if brains are greater than 7 then quit turn.
+// LATER.. maybe do stats of how many REDs, YELLOWs, and GREENs are out of play and base WINNING on this.
+        if brainTally > 6 {
+          gameOutcome=msgYouSurvivedAnotherDay
+          gameState=false
+        }
+//fmt.Printf("roll-b: (%d)  %1s\n", i, icon[v][rolld6])
+rolledDieOnTable[i]=1
         if len(myCup)==0 {gameState=false}
-      }
+      } //eocase brain
       // RUNNER -------------------------------------------------------
       case runner: {
+//fmt.Printf("roll-r: (%d)  %1s\n", i, icon[v][rolld6])
         runnerTally+=1
         tally[runner]+=1
-      }
+      } //eocase runner
       // SHOTGUN ------------------------------------------------------
       case shotgun: {
         shotgunTally+=1
         tally[brain]+=1
         myScore[shotgun]+=1
-fmt.Printf("roll-s: %1s\n", iconSides[v][rolld6])
-debuga("50-cup-s",myCup)
-debuga("50-hand-s",myHand)
-        myHand=append(myHand[:i], myHand[i+1:]...)                     // remove SHOTGUN from hand
+//fmt.Printf("roll-s: (%d)  %1s\n", i, icon[v][rolld6])
+rolledDieOnTable[i]=1
         if shotgunTally == 3 {
           gameOutcome=msgYouWereShotgunned
           gameState=false
-        }
-debuga("51-hand",myHand)
-        // , AND.. get another DIE from myCup
-        d=myCup[len(myCup)-1]                                          // and get another die from cup
-        myCup=myCup[:len(myCup)-1]
-        myHand=append(myHand, d)
-debuga("52-cup",myCup)
-debuga("52-hand",myHand)
+        } //eoif 3-shotguns
         //  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
         if len(myCup)==0 {gameState=false}
-      }
+      } //eocase shotgun
+    } //eoswitch dieSides
+    resultVisual=resultVisual+icon[v][rolld6]
+  } //eofor theRoll
 
-    } //eoswitch
-    resultVisual=resultVisual+iconSides[v][rolld6]
-  } //eofor
+  //now.. move (copy) all runners from leftHand to rightHand
+  //AND   forget about brains and shotguns in left hand (they will go out of play and have been already tally'd)
+  myRightHand=nil
+  for i=0; i<3; i++ {
+//fmt.Printf("i= %d\n",i)
+    switch rolledDieOnTable[i] {
+      case 0:  { // was a runner
+debuga("70-lhand",i,myLeftHand)
+debuga("70-rhand",i,myRightHand)
+        myRightHand=append(myRightHand, myLeftHand[i])
+debuga("71-lhand",i,myLeftHand)
+debuga("71-rhand",i,myRightHand)
+      } //eocase0 rolledDieOnTable
+      case 1:  { // was a brain or shotgun
+debuga("72-cup",i,myCup)
+debuga("72-rhand",i,myRightHand)
+        myRightHand=append(myRightHand, myCup[len(myCup)-1])                     // get another die from cup
+        myCup=myCup[:len(myCup)-1]                                     //   therefore reducing the cup qty
+debuga("73-cup",i,myCup)
+debuga("73-rhand",i,myRightHand)
+      } //eocase1 rolledDieOnTable
+    } //eoswitch rolledDieOnTable
+  } //eofor rolledDieOnTable
+
+  // now take what is in right hand and put it back in left hand
+  myLeftHand=myRightHand
+
+
+//  // now remove (removable dice) from myLeftHand (left)
+//  for i=0; i<3; i++ {
+//    if rolledDieOnTable[i] == 1 {
+//debuga("74-hand",i,myLeftHand)
+//        myLeftHand=append(myLeftHand[:i], myLeftHand[i+1:]...)                     // remove BRAIN/SHOTGUN from hand
+//debuga("75-hand",i,myLeftHand)
+//    }
+//  }
+//  // now replenish (now removed dice) into myLeftHand (left)
+//  for i=0; i<(3-len(myLeftHand)); i++ {
+//debuga("78-hand",i,myLeftHand)
+//    myLeftHand=append(myLeftHand[:i], myLeftHand[i+1:]...)                     // remove BRAIN/SHOTGUN from hand
+//debuga("79-hand",i,myLeftHand)
+//  }
   fmt.Printf("roll %02d: %-3s   tally: brains:%02d    runners:%02d    shotguns:%02d",rollCount, resultVisual, brainTally, runnerTally, shotgunTally)
   fmt.Print(ansiBlue, " ┃", ansiReset, "\n")
 }
@@ -230,7 +303,7 @@ func main() {
   rand.Seed(time.Now().UnixNano())
   myScore=resetScores()                                                // reset 3 scores (brains, runners, shotguns) to zeroes
   dieSides=prepDieSides()
-  iconSides=prepIcons()
+  icon=prepIcons()
   myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
   // Title ------------------------------------------------------------
   fmt.Print(ansiBlue)
@@ -238,21 +311,20 @@ func main() {
   fmt.Print("┃  Zombie Dice   ┃\n")
   fmt.Print("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
   fmt.Print(ansiReset, "\n")
-  //
-debuga("20-cup",myCup)
-debuga("20-hand",myHand)
+  showCupContents(myCup)
+debuga("00-cup",0,myCup)
   d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
   myCup=myCup[:len(myCup)-1]
   d2=myCup[len(myCup)-1]
   myCup=myCup[:len(myCup)-1]
   d3=myCup[len(myCup)-1]
   myCup=myCup[:len(myCup)-1]
-  myHand=append(myHand, d1,d2,d3)                                      //   and place in hand for first roll
-debuga("21-cup",myCup)
-debuga("21-hand",myHand)
+  myLeftHand=append(myLeftHand, d1,d2,d3)                                      //   and place in hand for first roll
+debuga("10-cup",0,myCup)
+debuga("10-hand",0,myLeftHand)
 
   for {
-    rollResults(myHand)
+    rollResults(myLeftHand)
     if !gameState {
       break
     }
