@@ -71,20 +71,6 @@ var (
 
 
 // FUNCTIONS ===========================================================
-func debuga(msg string, i int, s []int) {
-//  var v int
-  var dieColors [3]string
-
-  dieColors[0]=greenDie
-  dieColors[1]=yellowDie
-  dieColors[2]=redDie
-//  fmt.Printf("dbg:%-10s  i:%d  len:[%02d] ",msg, i, len(s))
-//  for _, v = range s {
-//    fmt.Printf("%-2s ", dieColors[v])
-//  }
-//  fmt.Println("")
-}
-
 func showCupContents(s []int) {
   var v int
   var dieColors [3]string
@@ -97,15 +83,6 @@ func showCupContents(s []int) {
     fmt.Printf("%-2s ", dieColors[v])
   }
   fmt.Print(ansiBlue, "             ┃", ansiReset, "\n")
-}
-
-
-
-func printSlice(z int, s []int) {
-  fmt.Printf("z=%d :  len=%d    %v      \n", z, len(s), s)
-}
-func printSlice2(z int, s [][]int) {
-  fmt.Printf("z=%d :  len=%d    %#v      \n", z, len(s), s)
 }
 
 func randomizeDiceInCup(howManyDice int) (cup []int) {
@@ -143,13 +120,8 @@ func prepDieSides() [][]int {                                          // popula
   var greenDieSides, yellowDieSides, redDieSides []int
   var ds [][]int
 
-
 //
 // TO GET MORE RANDOMNESS (???) change the BELOW sides to a more random series of values.. ie not b, b, b, r, r, s. --> b, r, s, b,...
-//
-//
-//
-//
 //
 //
 //
@@ -187,26 +159,8 @@ func rollResults(theRoll []int) {
 
   rollCount+=1
   fmt.Print(ansiBlue, "┃ ",ansiReset)
-// TEMP BELOW
-//fmt.Print("\n")
-//TEMP ABOVE
   for i, v = range theRoll {
     rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
-//
-//
-// TEMP - DEBUG - all rolls are shotgun
-//rolld6=5
-//
-//
-
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// WILL BE CHANGING all these lines from  ....[v] to .....[i]
-//     205, 220
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     switch dieSides[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
       // BRAIN --------------------------------------------------------
       case brain:   {
@@ -220,13 +174,11 @@ func rollResults(theRoll []int) {
           gameOutcome=msgYouSurvivedAnotherDay
           gameState=false
         }
-//fmt.Printf("roll-b: (%d)  %1s\n", i, icon[v][rolld6])
-rolledDieOnTable[i]=1
+        rolledDieOnTable[i]=1
         if len(myCup)==0 {gameState=false}
       } //eocase brain
       // RUNNER -------------------------------------------------------
       case runner: {
-//fmt.Printf("roll-r: (%d)  %1s\n", i, icon[v][rolld6])
         runnerTally+=1
         tally[runner]+=1
       } //eocase runner
@@ -235,13 +187,11 @@ rolledDieOnTable[i]=1
         shotgunTally+=1
         tally[brain]+=1
         myScore[shotgun]+=1
-//fmt.Printf("roll-s: (%d)  %1s\n", i, icon[v][rolld6])
-rolledDieOnTable[i]=1
+        rolledDieOnTable[i]=1
         if shotgunTally == 3 {
           gameOutcome=msgYouWereShotgunned
           gameState=false
         } //eoif 3-shotguns
-        //  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
         if len(myCup)==0 {gameState=false}
       } //eocase shotgun
     } //eoswitch dieSides
@@ -252,44 +202,19 @@ rolledDieOnTable[i]=1
   //AND   forget about brains and shotguns in left hand (they will go out of play and have been already tally'd)
   myRightHand=nil
   for i=0; i<3; i++ {
-//fmt.Printf("i= %d\n",i)
     switch rolledDieOnTable[i] {
       case 0:  { // was a runner
-debuga("70-lhand",i,myLeftHand)
-debuga("70-rhand",i,myRightHand)
         myRightHand=append(myRightHand, myLeftHand[i])
-debuga("71-lhand",i,myLeftHand)
-debuga("71-rhand",i,myRightHand)
       } //eocase0 rolledDieOnTable
       case 1:  { // was a brain or shotgun
-debuga("72-cup",i,myCup)
-debuga("72-rhand",i,myRightHand)
         myRightHand=append(myRightHand, myCup[len(myCup)-1])                     // get another die from cup
         myCup=myCup[:len(myCup)-1]                                     //   therefore reducing the cup qty
-debuga("73-cup",i,myCup)
-debuga("73-rhand",i,myRightHand)
       } //eocase1 rolledDieOnTable
     } //eoswitch rolledDieOnTable
   } //eofor rolledDieOnTable
 
   // now take what is in right hand and put it back in left hand
   myLeftHand=myRightHand
-
-
-//  // now remove (removable dice) from myLeftHand (left)
-//  for i=0; i<3; i++ {
-//    if rolledDieOnTable[i] == 1 {
-//debuga("74-hand",i,myLeftHand)
-//        myLeftHand=append(myLeftHand[:i], myLeftHand[i+1:]...)                     // remove BRAIN/SHOTGUN from hand
-//debuga("75-hand",i,myLeftHand)
-//    }
-//  }
-//  // now replenish (now removed dice) into myLeftHand (left)
-//  for i=0; i<(3-len(myLeftHand)); i++ {
-//debuga("78-hand",i,myLeftHand)
-//    myLeftHand=append(myLeftHand[:i], myLeftHand[i+1:]...)                     // remove BRAIN/SHOTGUN from hand
-//debuga("79-hand",i,myLeftHand)
-//  }
   fmt.Printf("roll %02d: %-3s   tally: brains:%02d    runners:%02d    shotguns:%02d",rollCount, resultVisual, brainTally, runnerTally, shotgunTally)
   fmt.Print(ansiBlue, " ┃", ansiReset, "\n")
 }
@@ -312,7 +237,6 @@ func main() {
   fmt.Print("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
   fmt.Print(ansiReset, "\n")
   showCupContents(myCup)
-debuga("00-cup",0,myCup)
   d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
   myCup=myCup[:len(myCup)-1]
   d2=myCup[len(myCup)-1]
@@ -320,8 +244,6 @@ debuga("00-cup",0,myCup)
   d3=myCup[len(myCup)-1]
   myCup=myCup[:len(myCup)-1]
   myLeftHand=append(myLeftHand, d1,d2,d3)                                      //   and place in hand for first roll
-debuga("10-cup",0,myCup)
-debuga("10-hand",0,myLeftHand)
 
   for {
     rollResults(myLeftHand)
@@ -329,7 +251,6 @@ debuga("10-hand",0,myLeftHand)
       break
     }
   }
-
 
   if (len(myCup)==0 && shotgunTally<3) {
     gameOutcome=msgYouSurvivedAnotherDay
