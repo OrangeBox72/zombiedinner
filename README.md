@@ -1,2 +1,4 @@
 # zombiedice
-zombiedice - programming experience - golang style
+zombiedice - programming experience - golang style.
+
+![](images/play.png)
