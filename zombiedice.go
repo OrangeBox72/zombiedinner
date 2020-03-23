@@ -7,13 +7,14 @@
 //   * 2020-03-12 - started using ANSI colors.. but they mess up printf formatting, so i have to pad spaces on the colored variables.
 package main
 
-import "fmt"
-import "math/rand"                                                     // for random numbers
-import "time"                                                          // for random seed
+import (
+  "fmt"
+  "math/rand"                                                          // for random numbers
+  "time"                                                               // for random seed
+  "os"
+)
 
-import "os"
-
-// CONSTANTS -----------------------------------------------------------
+// GLOBAL CONSTANTS ---------------------------------------------------
 const brain int = 0                                                    // index for brain
 const shotgun int = 2                                                  // index for shotgun
 const runner int = 1                                                   // index for runner
