@@ -51,7 +51,7 @@ var y int                                                              // misc v
 var dieColors [][]int                                                  // two dimensional array listing all possible sides for each colored dice
 var icon [][]string
 var myScore []int
-var tally [3]int                                                       // single roll tally (ie not accumlative)
+//var tally [3]int                                                       // single roll tally (ie not accumlative)
 var myCup []int                                                        // dice in cup
 var myLeftHand []int                                                   // dice in hand (current roll)
 var myRightHand []int                                                  // hand that temporarily holds dice that are not put out of play
@@ -153,9 +153,9 @@ func rollResults() {
 
   roundIdx+=1
   fmt.Print(color.BlueString("┃ "))
-  tally[brain]=0
-  tally[runner]=0
-  tally[shotgun]=0
+//  tally[brain]=0
+//  tally[runner]=0
+//  tally[shotgun]=0
 
   handPercentages = nil
   handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][brain] + diePercentages[myLeftHand[1]][brain] + diePercentages[myLeftHand[2]][brain])/3)+0.005)*100))
@@ -173,12 +173,11 @@ func rollResults() {
     switch dieColors[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
       // SHOTGUN ------------------------------------------------------
       case shotgun: {
-        tally[shotgun]+=1
+//        tally[shotgun]+=1
         myScore[shotgun]+=1
         rolledDieOnTable[i]=1
         if myScore[shotgun] > 2 {
-          gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(tally[brain]) + " braaains.)"
-//          gameMessage=color.RedString("You have been Destroyed!  (you almost had 999 braaains.)")
+          gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(myScore[brain]) + " braaains.)"
           myScore[brain]=0                                             // no BRAINS for you! You got blasted!
           gameOutcome=false
           gameState=false
@@ -189,9 +188,9 @@ func rollResults() {
       // BRAIN --------------------------------------------------------
       case brain:   {
         if gameState {
-          tally[brain]+=1
+//          tally[brain]+=1
           myScore[brain]+=1
-          if tally[brain] > 6 {                                            //WINNING
+          if myScore[brain] > 6 {                                            //WINNING
             gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
             gameOutcome=true
             gameState=false
@@ -202,7 +201,7 @@ func rollResults() {
       } //eocase brain
       // RUNNER -------------------------------------------------------
       case runner: {
-        tally[runner]+=1
+//        tally[runner]+=1
       } //eocase runner
     } //eoswitch dieColors
     rolledVisual=rolledVisual+icon[v][rolld6]
@@ -277,7 +276,7 @@ msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
     }
   }
 
-  if (len(myCup)==0 && tally[shotgun]<3) {
+  if (len(myCup)==0 && myScore[shotgun]<3) {
     gameMessage=msgYouSurvivedAnotherDay
   }
 
