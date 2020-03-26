@@ -4,14 +4,16 @@
 // references:
 //    global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
 // notes: actual gameplay still not done.
-//   * 2020-03-12 - started using ANSI colors.. but they mess up printf formatting, so i have to pad spaces on the colored variables.
+//   * 2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
 package main
 
 import (
   "fmt"
   "math/rand"                                                          // for random numbers
+  "strconv"                                                            // string conversions
   "time"                                                               // for random seed
   "os"
+  "github.com/fatih/color"
 )
 
 // GLOBAL CONSTANTS ---------------------------------------------------
@@ -26,7 +28,7 @@ const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
 const totalNumberOfRedDice = 3
 
-const greenBrain string     = "\033[38;5;15m\033[48;5;2mB\033[39;49m"
+const greenBrain string     = "\033[38;5;15m\033[48;5;2mB\033[39;49m"  // here are all of the icon-faces
 const greenRunner string    = "\033[38;5;15m\033[48;5;2mR\033[39;49m"
 const greenShotgun string   = "\033[38;5;0m\033[48;5;2mS\033[39;49m"
 const yellowBrain string    = "\033[38;5;15m\033[48;5;3mB\033[39;49m"
@@ -39,37 +41,23 @@ const redShotgun string     = "\033[38;5;0m\033[48;5;1mS\033[39;49m"
 const greenDie string       = "\033[38;5;15m\033[48;5;2mg\033[39;49m"
 const yellowDie string      = "\033[38;5;15m\033[48;5;3my\033[39;49m"
 const redDie string         = "\033[38;5;15m\033[48;5;1mr\033[39;49m"
-//
-const ansiReset string      = "\033[39;49m"
-const ansiGreen string      = "\033[38;5;2m"
-const ansiRed string        = "\033[38;5;1m"
-const ansiBlue string       = "\033[38;5;4m"
-//const ansiYellow string     = "\033[38;5;3m"
 
-
-// NOTE: because of ANSI-Color escape sequences and printf..   1         2         3
-//       you have to space out extra spaces (to 32).  12345678901234567890123456789012
-const msgYouWereShotgunned string      = "\033[38;5;1mYou have been DESTROYED!                 \033[38;5;4m"
-const msgYouSurvivedAnotherDay string  = "\033[38;5;2mYou're a really AWESOME Zombie!          \033[38;5;4m"
-
+var msgYouSurvivedAnotherDay string
 
 // VARS ----------------------------------------------------------------
 var rolld6 int
 var x int                                                              // misc var
 var y int                                                              // misc var
-var color int      // color picked from cup during the setup
-var dieColors [][]int                                                   // two dimensional array listing all possible sides for each colored dice
+var dieColors [][]int                                                  // two dimensional array listing all possible sides for each colored dice
 var icon [][]string
 var myScore []int
+var tally [3]int                                                       // single roll tally (ie not accumlative)
 var myCup []int                                                        // dice in cup
-var myLeftHand []int                                                       // dice in hand (current roll)
+var myLeftHand []int                                                   // dice in hand (current roll)
 var myRightHand []int                                                  // hand that temporarily holds dice that are not put out of play
 var outOfPlay []int                                                    // dice now out of play because of a shotgun roll
 var gameMessage string
 var gameOutcome bool
-var brainTally int
-var runnerTally int
-var shotgunTally int
 var roundIdx int
 var gameState bool
 var diePercentages [][]float32
@@ -109,6 +97,7 @@ func getCupPercentages(c []int, percentageType int) (cupPercs int){
 
 func randomizeDiceInCup(howManyDice int) (cup []int) {
   var diceColorsAvailable [3]int
+  var randomColor int
   var z int
 
   diceColorsAvailable[green]=totalNumberOfGreenDice                    // there are initially six green die in the bag
@@ -116,11 +105,11 @@ func randomizeDiceInCup(howManyDice int) (cup []int) {
   diceColorsAvailable[red]=totalNumberOfRedDice                        // there are initially three red die in the bag
   z=0
   for z < howManyDice {
-    color = rand.Intn(3)
-    if diceColorsAvailable[color] > 0 {                                // if there is still THIS-COLOR remaining
-      cup=append(cup,color)                                            // prepoulate
+    randomColor = rand.Intn(3)
+    if diceColorsAvailable[randomColor] > 0 {                          // if there is still THIS-COLOR remaining
+      cup=append(cup,randomColor)                                      // prepoulate
       z+=1                                                             //
-      diceColorsAvailable[color]-=1                                    // reduce THIS-COLOR by one
+      diceColorsAvailable[randomColor]-=1                              // reduce THIS-COLOR by one
     }
   }
   return
@@ -159,12 +148,11 @@ func rollResults() {
   var v int                                                            // the type of die being utilized (GREEN, YELLOW, RED)
   var i int                                                            // index var:  current die being utilized
   var rolledVisual string                                              // visual die. ANSI colored with rolled value showing.
-  var handVisual string                                           // visual die. ANSI colored.. but no face value. ie before roll.
-  var tally [3]int                                                     // single roll tally (ie not accumlative)
+  var handVisual string                                                // visual die. ANSI colored.. but no face value. ie before roll.
   var rolledDieOnTable [3]int      // number of die to replenish after roll (ie how many taken out of play)
 
   roundIdx+=1
-  fmt.Print(ansiBlue, "┃ ",ansiReset)
+  fmt.Print(color.BlueString("┃ "))
   tally[brain]=0
   tally[runner]=0
   tally[shotgun]=0
@@ -189,7 +177,9 @@ func rollResults() {
         myScore[shotgun]+=1
         rolledDieOnTable[i]=1
         if myScore[shotgun] > 2 {
-          gameMessage=msgYouWereShotgunned
+          gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(tally[brain]) + " braaains.)"
+//          gameMessage=color.RedString("You have been Destroyed!  (you almost had 999 braaains.)")
+          myScore[brain]=0                                             // no BRAINS for you! You got blasted!
           gameOutcome=false
           gameState=false
         } //eoif 3-shotguns
@@ -198,15 +188,17 @@ func rollResults() {
       } //eocase shotgun
       // BRAIN --------------------------------------------------------
       case brain:   {
-        tally[brain]+=1
-        myScore[brain]+=1
-        if brainTally > 6 {                                            //WINNING
-          gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
-          gameOutcome=true
-          gameState=false
-        }
-        rolledDieOnTable[i]=1
-        if len(myCup)==0 {gameState=false}
+        if gameState {
+          tally[brain]+=1
+          myScore[brain]+=1
+          if tally[brain] > 6 {                                            //WINNING
+            gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
+            gameOutcome=true
+            gameState=false
+          }
+          rolledDieOnTable[i]=1
+          if len(myCup)==0 {gameState=false}
+        } //eoifGameState
       } //eocase brain
       // RUNNER -------------------------------------------------------
       case runner: {
@@ -243,7 +235,8 @@ func rollResults() {
     handVisual, handPercentages[brain], handPercentages[shotgun],
     possiblePercentages[brain], possiblePercentages[shotgun], cupVisual,
     rolledVisual)
-  fmt.Print(ansiBlue, " ┃", ansiReset, "\n")
+    fmt.Print(color.BlueString(" ┃\n"))
+
 }
 
 // MAIN ===============================================================
@@ -251,6 +244,8 @@ func main() {
   var d1,d2,d3 int
 
   // INIT -------------------------------------------------------------
+msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
+
   gameState=true
   rand.Seed(time.Now().UnixNano())
   myScore=[]int{0, 0, 0}                                               // reset 3 scores (brains, runners, shotguns) to zeroes
@@ -263,10 +258,11 @@ func main() {
   myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
 
   // Title ------------------------------------------------------------
-  fmt.Print(ansiBlue)
-  fmt.Print("┏━━━━━━━━━━━━━━━━┓\n")
-  fmt.Print("┃  Zombie Dice   ┃\n")
-  fmt.Print("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n")
+  color.Blue("┏━━━━━━━━━━━━━━━━┓")
+  color.Blue("┃  Zombie Dice   ┃")
+  color.Blue("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+
+
   d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
   myCup=myCup[:len(myCup)-1]
   d2=myCup[len(myCup)-1]
@@ -281,20 +277,18 @@ func main() {
     }
   }
 
-  if (len(myCup)==0 && shotgunTally<3) {
+  if (len(myCup)==0 && tally[shotgun]<3) {
     gameMessage=msgYouSurvivedAnotherDay
   }
 
-  fmt.Print(ansiBlue)
-  fmt.Print( "┣━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\n")
-  fmt.Printf("┃  Stats         ┃ %-42s                                ┃\n",gameMessage)
-  fmt.Print( "┣━━━━━━━━━━━━━━━━┫                                                                          ┃\n")
-  fmt.Printf("┃ Rolls:    %02d   ┃                                                                          ┃\n", roundIdx)
-  fmt.Print( "┣━━━━━━━━━━━━━━━━┫                                                                          ┃\n")
-  fmt.Printf("┃ Braaains: %02d   ┃                                                                          ┃\n", myScore[brain])
-  fmt.Printf("┃ Shotguns: %02d   ┃                                                                  madRobot┃\n", myScore[shotgun])
-  fmt.Print( "┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n")
-  fmt.Print(ansiReset, "\n")
+  color.Blue("┣━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
+  color.Blue("┃  Stats         ┃ %-80s  ┃\n", gameMessage)
+  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                                          ┃")
+  color.Blue("┃ Rolls:    %02d   ┃                                                                          ┃", roundIdx)
+  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                                          ┃")
+  color.Blue("┃ Braaains: %02d   ┃                                                                          ┃", myScore[brain])
+  color.Blue("┃ Shotguns: %02d   ┃                                                                  madRobot┃", myScore[shotgun])
+  color.Blue("┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 
   if gameOutcome {
     os.Exit(0)
