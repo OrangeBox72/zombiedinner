@@ -4,7 +4,8 @@
 // references:
 //    global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
 // notes: actual gameplay still not done.
-//   * 2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
+//   2020-03-26 - fixed issue#4 (almost had X brains - stat)
+//   2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
 package main
 
 import (
@@ -51,7 +52,6 @@ var y int                                                              // misc v
 var dieColors [][]int                                                  // two dimensional array listing all possible sides for each colored dice
 var icon [][]string
 var myScore []int
-//var tally [3]int                                                       // single roll tally (ie not accumlative)
 var myCup []int                                                        // dice in cup
 var myLeftHand []int                                                   // dice in hand (current roll)
 var myRightHand []int                                                  // hand that temporarily holds dice that are not put out of play
@@ -81,17 +81,11 @@ func getCupPercentages(c []int, percentageType int) (cupPercs int){
   var i int
   var percs float32
 
-//fmt.Printf("\n")
-
   percs=0.0
   for i, v = range c {
-//fmt.Printf("%2d - [%2d][%2d]=%2.3f\n",i,v,percentageType,diePercentages[v][percentageType])
     percs=percs+diePercentages[v][percentageType]
   }
-//fmt.Printf("pf:%2.3f  ", ((percs/float32(i))+0.005)*100 )
-//fmt.Printf("pi:%2d    ", int(((percs/float32(i))+0.005)*100)     )
   cupPercs = int(((percs/float32(i))+0.005)*100)
-//  fmt.Printf("cp: %4d\n", cupPercs)
   return
 }
 
@@ -131,6 +125,7 @@ func prepDieColors() [][]int {                                          // popul
 func prepIcons() [][]string {                                            // populate two dimensional array w/each die color and face
   var greenIcons, yellowIcons, redIcons []string
   var ds [][]string
+
   // -- prep sides for green, yellow, and red dies (icons) into a two dimensional array
   //    NOTE: in order to show blank dice (colors only).. ie before dice is rolled, i have added a 7th item to these 6-sided dies.
   //          i.e.. greenDie, yellowDie, and redDie.
@@ -149,14 +144,10 @@ func rollResults() {
   var i int                                                            // index var:  current die being utilized
   var rolledVisual string                                              // visual die. ANSI colored with rolled value showing.
   var handVisual string                                                // visual die. ANSI colored.. but no face value. ie before roll.
-  var rolledDieOnTable [3]int      // number of die to replenish after roll (ie how many taken out of play)
+  var rolledDieOnTable [3]int                                          // number of die to replenish after roll (ie how many taken out of play)
 
   roundIdx+=1
   fmt.Print(color.BlueString("┃ "))
-//  tally[brain]=0
-//  tally[runner]=0
-//  tally[shotgun]=0
-
   handPercentages = nil
   handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][brain] + diePercentages[myLeftHand[1]][brain] + diePercentages[myLeftHand[2]][brain])/3)+0.005)*100))
   handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][runner] + diePercentages[myLeftHand[1]][runner] + diePercentages[myLeftHand[2]][runner])/3)+0.005)*100))
@@ -173,7 +164,6 @@ func rollResults() {
     switch dieColors[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
       // SHOTGUN ------------------------------------------------------
       case shotgun: {
-//        tally[shotgun]+=1
         myScore[shotgun]+=1
         rolledDieOnTable[i]=1
         if myScore[shotgun] > 2 {
@@ -188,7 +178,6 @@ func rollResults() {
       // BRAIN --------------------------------------------------------
       case brain:   {
         if gameState {
-//          tally[brain]+=1
           myScore[brain]+=1
           if myScore[brain] > 6 {                                            //WINNING
             gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
@@ -201,7 +190,6 @@ func rollResults() {
       } //eocase brain
       // RUNNER -------------------------------------------------------
       case runner: {
-//        tally[runner]+=1
       } //eocase runner
     } //eoswitch dieColors
     rolledVisual=rolledVisual+icon[v][rolld6]
@@ -209,7 +197,7 @@ func rollResults() {
   } //eofor theRoll
 
   //now.. move (copy) all runners from leftHand to rightHand
-  //AND   forget about brains and shotguns in left hand (they will go out of play and have been already tally'd)
+  //AND   forget about brains and shotguns in left hand (they will go out of play and have been already scored)
   myRightHand=nil
   for i=0; i<3; i++ {
     switch rolledDieOnTable[i] {
