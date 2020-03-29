@@ -3,6 +3,7 @@
 // version: 2020/03/12. WIP
 // references:
 //    global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
+//    box drawing.  https://en.wikipedia.org/wiki/Box-drawing_character
 // notes: actual gameplay still not done.
 //   2020-03-26 - fixed issue#4 (almost had X brains - stat)
 //   2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
@@ -29,33 +30,20 @@ const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
 const totalNumberOfRedDice = 3
 
-const greenBrain string     = "\033[38;5;15m\033[48;5;2mB\033[39;49m"  // here are all of the icon-faces
-const greenRunner string    = "\033[38;5;15m\033[48;5;2mR\033[39;49m"
-const greenShotgun string   = "\033[38;5;0m\033[48;5;2mS\033[39;49m"
-const yellowBrain string    = "\033[38;5;15m\033[48;5;3mB\033[39;49m"
-const yellowRunner string   = "\033[38;5;15m\033[48;5;3mR\033[39;49m"
-const yellowShotgun string  = "\033[38;5;0m\033[48;5;3mS\033[39;49m"
-const redBrain string       = "\033[38;5;15m\033[48;5;1mB\033[39;49m"
-const redRunner string      = "\033[38;5;15m\033[48;5;1mR\033[39;49m"
-const redShotgun string     = "\033[38;5;0m\033[48;5;1mS\033[39;49m"
-//
-const greenDie string       = "\033[38;5;15m\033[48;5;2mg\033[39;49m"
-const yellowDie string      = "\033[38;5;15m\033[48;5;3my\033[39;49m"
-const redDie string         = "\033[38;5;15m\033[48;5;1mr\033[39;49m"
-
 var msgYouSurvivedAnotherDay string
 
 // VARS ----------------------------------------------------------------
 var rolld6 int
 var x int                                                              // misc var
 var y int                                                              // misc var
-var dieColors [][]int                                                  // two dimensional array listing all possible sides for each colored dice
+var dieFace [][]int                                                  // two dimensional array listing all possible sides for each colored dice
 var icon [][]string
 var myScore []int
 var myCup []int                                                        // dice in cup
 var myLeftHand []int                                                   // dice in hand (current roll)
 var myRightHand []int                                                  // hand that temporarily holds dice that are not put out of play
-var outOfPlay []int                                                    // dice now out of play because of a shotgun roll
+var outOfPlay string                                                   // dice now out of play because of a brain/shotgun roll
+var outOfPlayCounter int                                               // i need to count length so i can pad spaces. ie ANSI-colors mess up str-lengths
 var gameMessage string
 var gameOutcome bool
 var roundIdx int
@@ -63,17 +51,20 @@ var gameState bool
 var diePercentages [][]float32
 var handPercentages []int
 var possiblePercentages []int
-var cupVisual string
-var spaces []rune=[]rune("             ")                              // some spaces because i'm too dumb to know how to do this a better way.
+var spaces []rune=[]rune("             ")                            // some spaces because i'm too dumb to know how to do this a better way.
                                                                        // PLUS.. i like how 'rune' sounds.
 // FUNCTIONS ===========================================================
-func showCupContents(c []int) (cupContents string){
-  var v int
-  cupContents = ""
-  for _, v = range c {
-    cupContents = cupContents + icon[v][6]
+func visualizeDice(dice []int) (visualOutput string){
+  // NOTE: space-padding works here because input is integer-slice who's length can properly calculated.
+  //       Trying to calculate length of an ANSI-COLOR string is impossible.
+  var i, v int
+
+  for i, v = range dice {
+    visualOutput = visualOutput + icon[v][6]
   }
-  return cupContents
+  visualOutput = visualOutput + string(spaces[0:(12-i)])                // pad spaces to ensure length of 13.
+
+  return
 }
 
 func getCupPercentages(c []int, percentageType int) (cupPercs int){
@@ -109,7 +100,7 @@ func randomizeDiceInCup(howManyDice int) (cup []int) {
   return
 }
 
-func prepDieColors() [][]int {                                          // populate two dimensional array w/each die color and face
+func prepDieFaces() [][]int {                                          // populate two dimensional array w/each die color and face
   var greenDieSides, yellowDieSides, redDieSides []int
   var ds [][]int
 
@@ -125,6 +116,22 @@ func prepDieColors() [][]int {                                          // popul
 func prepIcons() [][]string {                                            // populate two dimensional array w/each die color and face
   var greenIcons, yellowIcons, redIcons []string
   var ds [][]string
+
+  green  := color.New(color.FgWhite, color.BgGreen).SprintFunc()
+  yellow := color.New(color.FgWhite, color.BgYellow).SprintFunc()
+  red    :=  color.New(color.FgWhite, color.BgRed).SprintFunc()
+  var greenBrain    string = green("B")
+  var greenRunner   string = green("R")
+  var greenShotgun  string = green("S")
+  var yellowBrain   string = yellow("B")
+  var yellowRunner  string = yellow("R")
+  var yellowShotgun string = yellow("S")
+  var redBrain      string = red("B")
+  var redRunner     string = red("R")
+  var redShotgun    string = red("S")
+  var greenDie      string = green("g")
+  var yellowDie     string = yellow("y")
+  var redDie        string = red("r")
 
   // -- prep sides for green, yellow, and red dies (icons) into a two dimensional array
   //    NOTE: in order to show blank dice (colors only).. ie before dice is rolled, i have added a 7th item to these 6-sided dies.
@@ -158,13 +165,13 @@ func rollResults() {
   possiblePercentages = append(possiblePercentages, getCupPercentages(myCup, shotgun) )
   for i, v = range myLeftHand {
     rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
-    cupVisual = showCupContents(myCup)
-    cupVisual = cupVisual + string(spaces[0:(13-len(myCup))])
     // NOTE:  (I think) the SWITCH order needs to be SHOTGUN, BRAIN, RUNNER to ensure 3-SHOTGUNS will stop before BRAINS are added to score.
-    switch dieColors[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
+    switch dieFace[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
       // SHOTGUN ------------------------------------------------------
       case shotgun: {
         myScore[shotgun]+=1
+        outOfPlay=outOfPlay+icon[v][rolld6]
+        outOfPlayCounter+=1
         rolledDieOnTable[i]=1
         if myScore[shotgun] > 2 {
           gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(myScore[brain]) + " braaains.)"
@@ -179,6 +186,8 @@ func rollResults() {
       case brain:   {
         if gameState {
           myScore[brain]+=1
+          outOfPlay=outOfPlay+icon[v][rolld6]
+          outOfPlayCounter+=1
           if myScore[brain] > 6 {                                            //WINNING
             gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
             gameOutcome=true
@@ -191,10 +200,19 @@ func rollResults() {
       // RUNNER -------------------------------------------------------
       case runner: {
       } //eocase runner
-    } //eoswitch dieColors
+    } //eoswitch dieFace
     rolledVisual=rolledVisual+icon[v][rolld6]
     handVisual=handVisual+icon[v][6]
   } //eofor theRoll
+
+  fmt.Printf(" %02d   ┃ %-3s b:%02d%% s:%02d%% ┃ b:%02d%% s:%02d%%  %-13s┃  %-3s   ┃ %-13s",
+    roundIdx,
+    handVisual, handPercentages[brain], handPercentages[shotgun],
+    possiblePercentages[brain], possiblePercentages[shotgun],
+    visualizeDice(myCup),
+    rolledVisual,
+    (outOfPlay + string(spaces[0:(13-outOfPlayCounter)])) )
+  fmt.Print(color.BlueString(" ┃\n"))
 
   //now.. move (copy) all runners from leftHand to rightHand
   //AND   forget about brains and shotguns in left hand (they will go out of play and have been already scored)
@@ -215,15 +233,7 @@ func rollResults() {
       } //eocase1 rolledDieOnTable
     } //eoswitch rolledDieOnTable
   } //eofor rolledDieOnTable
-
   myLeftHand=myRightHand                                               // now take what is in right hand and put it back in left hand
-  fmt.Printf("round %02d: (in hand: %-3s b:%2d%% s:%2d%%) (in play: b:%2d%% s:%2d%%  %-10s)    rolled: %-3s",
-    roundIdx,
-    handVisual, handPercentages[brain], handPercentages[shotgun],
-    possiblePercentages[brain], possiblePercentages[shotgun], cupVisual,
-    rolledVisual)
-    fmt.Print(color.BlueString(" ┃\n"))
-
 }
 
 // MAIN ===============================================================
@@ -231,12 +241,12 @@ func main() {
   var d1,d2,d3 int
 
   // INIT -------------------------------------------------------------
-msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
+  msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
 
   gameState=true
   rand.Seed(time.Now().UnixNano())
   myScore=[]int{0, 0, 0}                                               // reset 3 scores (brains, runners, shotguns) to zeroes
-  dieColors=prepDieColors()
+  dieFace=prepDieFaces()
   icon=prepIcons()
   diePercentages = append(diePercentages, []float32{0.500,0.333,0.167})  //GREEN:  brain, runner, shotgun - percentages
   diePercentages = append(diePercentages, []float32{0.333,0.333,0.333})  //YELLOW: brain, runner, shotgun - percentages
@@ -247,8 +257,8 @@ msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
   // Title ------------------------------------------------------------
   color.Blue("┏━━━━━━━━━━━━━━━━┓")
   color.Blue("┃  Zombie Dice   ┃")
-  color.Blue("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-
+  color.Blue("┣━━━━━━━┳━━━━━━━━┻━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┓")
+  color.Blue("┃ round ┃     in hand     ┃          in play          ┃ rolled ┃  out of play  ┃")
 
   d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
   myCup=myCup[:len(myCup)-1]
@@ -257,6 +267,7 @@ msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
   d3=myCup[len(myCup)-1]
   myCup=myCup[:len(myCup)-1]
   myLeftHand=append(myLeftHand, d1,d2,d3)                                      //   and place in hand for first roll
+
   for {
     rollResults()
     if !gameState {
@@ -268,14 +279,14 @@ msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
     gameMessage=msgYouSurvivedAnotherDay
   }
 
-  color.Blue("┣━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
-  color.Blue("┃  Stats         ┃ %-80s  ┃\n", gameMessage)
-  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                                          ┃")
-  color.Blue("┃ Rolls:    %02d   ┃                                                                          ┃", roundIdx)
-  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                                          ┃")
-  color.Blue("┃ Braaains: %02d   ┃                                                                          ┃", myScore[brain])
-  color.Blue("┃ Shotguns: %02d   ┃                                                                  madRobot┃", myScore[shotgun])
-  color.Blue("┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+  color.Blue("┣━━━━━━━┻━━━━━━━━┳━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━━━━┫")
+  color.Blue("┃  Stats         ┃ %-67s  ┃\n", gameMessage)
+  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
+  color.Blue("┃ Rolls:    %02d   ┃                                                             ┃", roundIdx)
+  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
+  color.Blue("┃ Braaains: %02d   ┃                                                             ┃", myScore[brain])
+  color.Blue("┃ Shotguns: %02d   ┃                                                     madRobot┃", myScore[shotgun])
+  color.Blue("┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 
   if gameOutcome {
     os.Exit(0)
