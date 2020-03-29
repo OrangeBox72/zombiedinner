@@ -3,10 +3,6 @@ INSTALL NOTES
 
 **Installation**
 
-In order to compile, you will need to ensure that you have installed
-*github.com/fatih/color* - for ANSI color needs.
-Please read the *INSTALL.MD* file for info on how to get started with GO.
-
 1. install *Golang*
 2. set your environment
    * `export GOPATH=~/Documents/go`   (or whereever you would like..)
