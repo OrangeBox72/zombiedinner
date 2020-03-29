@@ -1,4 +1,4 @@
-// name:    zombieDice
+// name:    zombieDinner
 // author:  johnny
 // version: 2020/03/12. WIP
 // references:
@@ -300,9 +300,9 @@ func main() {
   myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
 
   // Title ------------------------------------------------------------
-  color.Blue("┏━━━━━━━━━━━━━━━━┓")
-  color.Blue("┃  Zombie Dice   ┃")
-  color.Blue("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+  color.Blue("┏━━━━━━━━━━━━━━━━━━┓")
+  color.Blue("┃  Zombie Dinner   ┃")
+  color.Blue("┣━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
   color.Blue("┃ 'y'- continue after roll. any other key ends round.                          ┃")
   color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
   color.Blue("┃ round ┃     in hand     ┃          in play          ┃ rolled ┃  out of play  ┃")
