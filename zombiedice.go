@@ -2,9 +2,12 @@
 // author:  johnny
 // version: 2020/03/12. WIP
 // references:
-//    global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
-//    box drawing.  https://en.wikipedia.org/wiki/Box-drawing_character
+//   global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
+//   box drawing.  https://en.wikipedia.org/wiki/Box-drawing_character
+//   input handling. https://www.socketloop.com/tutorials/golang-handling-yes-no-quit-query-input
 // notes: actual gameplay still not done.
+//   2020-03-29 - added issue#6 enhancement: (human input)
+//   2020-03-28 - fixed issue#5 enhancement: (outOfPlay stats)
 //   2020-03-26 - fixed issue#4 (almost had X brains - stat)
 //   2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
 package main
@@ -17,6 +20,33 @@ import (
   "os"
   "github.com/fatih/color"
 )
+/*
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <termios.h>
+ char getch(){
+          char ch = 0;
+       struct termios old = {0};
+       fflush(stdout);
+       if( tcgetattr(0, &old) < 0 ) perror("tcsetattr()");
+       old.c_lflag &= ~ICANON;
+       old.c_lflag &= ~ECHO;
+       old.c_cc[VMIN] = 1;
+       old.c_cc[VTIME] = 0;
+       if( tcsetattr(0, TCSANOW, &old) < 0 ) perror("tcsetattr ICANON");
+       if( read(0, &ch,1) < 0 ) perror("read()");
+       old.c_lflag |= ICANON;
+       old.c_lflag |= ECHO;
+       if(tcsetattr(0, TCSADRAIN, &old) < 0) perror("tcsetattr ~ICANON");
+       return ch;
+   }
+ */
+ import "C"
+
+import (
+  "strings"
+)
+
 
 // GLOBAL CONSTANTS ---------------------------------------------------
 const brain int = 0                                                    // index for brain
@@ -30,7 +60,7 @@ const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
 const totalNumberOfRedDice = 3
 
-var msgYouSurvivedAnotherDay string
+//var msgYouSurvivedAnotherDay string
 
 // VARS ----------------------------------------------------------------
 var rolld6 int
@@ -145,6 +175,26 @@ func prepIcons() [][]string {                                            // popu
   return ds
 }
 
+func continueOn() (theResult bool){
+  char := C.getch()
+  answer:=fmt.Sprintf("%c", char)
+  answer=strings.ToLower(answer)
+  theResult=true
+  if answer=="n" {
+    theResult=false
+  }
+  return
+}
+
+func howMuchBuckshot() {
+  if myScore[shotgun] > 2 {
+    gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(myScore[brain]) + " braaains.)"
+    myScore[brain]=0                                             // no BRAINS for you! You got blasted!
+    gameOutcome=false
+    gameState=false
+  } //eoif 3-shotguns
+}
+
 func rollResults() {
   var rolld6 int
   var v int                                                            // the type of die being utilized (GREEN, YELLOW, RED)
@@ -173,12 +223,7 @@ func rollResults() {
         outOfPlay=outOfPlay+icon[v][rolld6]
         outOfPlayCounter+=1
         rolledDieOnTable[i]=1
-        if myScore[shotgun] > 2 {
-          gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(myScore[brain]) + " braaains.)"
-          myScore[brain]=0                                             // no BRAINS for you! You got blasted!
-          gameOutcome=false
-          gameState=false
-        } //eoif 3-shotguns
+        howMuchBuckshot()
         //  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
         if len(myCup)==0 {gameState=false}
       } //eocase shotgun
@@ -189,7 +234,6 @@ func rollResults() {
           outOfPlay=outOfPlay+icon[v][rolld6]
           outOfPlayCounter+=1
           if myScore[brain] > 6 {                                            //WINNING
-            gameMessage=msgYouSurvivedAnotherDay                         //  FOR NOW.. i will say if brains are greater than 7 then quit turn.
             gameOutcome=true
             gameState=false
           }
@@ -212,7 +256,11 @@ func rollResults() {
     visualizeDice(myCup),
     rolledVisual,
     (outOfPlay + string(spaces[0:(13-outOfPlayCounter)])) )
+
   fmt.Print(color.BlueString(" ┃\n"))
+  if gameState {                                                       // if we havent already reached 3 shotguns..
+    gameState=continueOn()                                             //   query user for next step
+  }
 
   //now.. move (copy) all runners from leftHand to rightHand
   //AND   forget about brains and shotguns in left hand (they will go out of play and have been already scored)
@@ -227,7 +275,6 @@ func rollResults() {
           myRightHand=append(myRightHand, myCup[len(myCup)-1])         // get another die from cup
           myCup=myCup[:len(myCup)-1]                                   //   therefore reducing the cup qty
         } else {
-          gameMessage=msgYouSurvivedAnotherDay                         //MAYBE this means i won??? (since no more dice left in cup and havent received 3 shotguns)
           gameState=false
         } //eoif qtyDiceLeftInCup
       } //eocase1 rolledDieOnTable
@@ -238,10 +285,8 @@ func rollResults() {
 
 // MAIN ===============================================================
 func main() {
-  var d1,d2,d3 int
-
   // INIT -------------------------------------------------------------
-  msgYouSurvivedAnotherDay=color.GreenString("You're a really AWESOME Zombie!")
+  gameMessage=color.GreenString("You're a really AWESOME Zombie!")
 
   gameState=true
   rand.Seed(time.Now().UnixNano())
@@ -257,26 +302,23 @@ func main() {
   // Title ------------------------------------------------------------
   color.Blue("┏━━━━━━━━━━━━━━━━┓")
   color.Blue("┃  Zombie Dice   ┃")
-  color.Blue("┣━━━━━━━┳━━━━━━━━┻━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┓")
+  color.Blue("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+  color.Blue("┃ 'y'- continue after roll. any other key ends round.                          ┃")
+  color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
   color.Blue("┃ round ┃     in hand     ┃          in play          ┃ rolled ┃  out of play  ┃")
 
-  d1=myCup[len(myCup)-1]                                               // get first 3 (already randomized) dice from cup
+  myLeftHand=append(myLeftHand, myCup[len(myCup)-1])                   // its the FIRST roll.. get three dice.
+  myCup=myCup[:len(myCup)-1]                                           //   and put in your leftHand
+  myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
   myCup=myCup[:len(myCup)-1]
-  d2=myCup[len(myCup)-1]
+  myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
   myCup=myCup[:len(myCup)-1]
-  d3=myCup[len(myCup)-1]
-  myCup=myCup[:len(myCup)-1]
-  myLeftHand=append(myLeftHand, d1,d2,d3)                                      //   and place in hand for first roll
 
   for {
     rollResults()
     if !gameState {
       break
     }
-  }
-
-  if (len(myCup)==0 && myScore[shotgun]<3) {
-    gameMessage=msgYouSurvivedAnotherDay
   }
 
   color.Blue("┣━━━━━━━┻━━━━━━━━┳━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━━━━┫")
