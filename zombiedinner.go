@@ -233,10 +233,11 @@ func rollResults() {
           myScore[brain]+=1
           outOfPlay=outOfPlay+icon[v][rolld6]
           outOfPlayCounter+=1
-          if myScore[brain] > 6 {                                            //WINNING
-            gameOutcome=true
-            gameState=false
-          }
+//johnny REMOVE auto-quit if score is 7 or greater
+//          if myScore[brain] > 6 {                                            //WINNING
+//            gameOutcome=true
+//            gameState=false
+//          }
           rolledDieOnTable[i]=1
           if len(myCup)==0 {gameState=false}
         } //eoifGameState
@@ -303,7 +304,7 @@ func main() {
   color.Blue("┏━━━━━━━━━━━━━━━━━━┓")
   color.Blue("┃  Zombie Dinner   ┃")
   color.Blue("┣━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-  color.Blue("┃ 'y'- continue after roll. any other key ends round.                          ┃")
+  color.Blue("┃ 'y'- to continue to roll. any other key ends round.                          ┃")
   color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
   color.Blue("┃ round ┃     in hand     ┃          in play          ┃ rolled ┃  out of play  ┃")
 
