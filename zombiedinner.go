@@ -149,7 +149,7 @@ func prepIcons() [][]string {                                            // popu
 
   green  := color.New(color.FgWhite, color.BgGreen).SprintFunc()
   yellow := color.New(color.FgWhite, color.BgYellow).SprintFunc()
-  red    :=  color.New(color.FgWhite, color.BgRed).SprintFunc()
+  red    := color.New(color.FgWhite, color.BgRed).SprintFunc()
   var greenBrain    string = green("B")
   var greenRunner   string = green("R")
   var greenShotgun  string = green("S")
@@ -233,11 +233,6 @@ func rollResults() {
           myScore[brain]+=1
           outOfPlay=outOfPlay+icon[v][rolld6]
           outOfPlayCounter+=1
-//johnny REMOVE auto-quit if score is 7 or greater
-//          if myScore[brain] > 6 {                                            //WINNING
-//            gameOutcome=true
-//            gameState=false
-//          }
           rolledDieOnTable[i]=1
           if len(myCup)==0 {gameState=false}
         } //eoifGameState
