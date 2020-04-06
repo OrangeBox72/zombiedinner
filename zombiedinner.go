@@ -179,9 +179,9 @@ func continueOn() (theResult bool){
   char := C.getch()
   answer:=fmt.Sprintf("%c", char)
   answer=strings.ToLower(answer)
-  theResult=true
-  if answer=="n" {
-    theResult=false
+  theResult=false
+  if answer=="y" {
+    theResult=true
   }
   return
 }
@@ -301,7 +301,7 @@ func main() {
   color.Blue("┣━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
   color.Blue("┃ 'y'- to continue to roll. any other key ends round.                          ┃")
   color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
-  color.Blue("┃ round ┃     in hand     ┃          in play          ┃ rolled ┃  out of play  ┃")
+  color.Blue("┃ round ┃     in hand     ┃          in cup           ┃ rolled ┃  out of play  ┃")
 
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])                   // its the FIRST roll.. get three dice.
   myCup=myCup[:len(myCup)-1]                                           //   and put in your leftHand
@@ -321,7 +321,7 @@ func main() {
   color.Blue("┃  Stats         ┃ %-67s  ┃\n", gameMessage)
   color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
   color.Blue("┃ Rolls:    %02d   ┃                                                             ┃", roundIdx)
-  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
+//  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
   color.Blue("┃ Braaains: %02d   ┃                                                             ┃", myScore[brain])
   color.Blue("┃ Shotguns: %02d   ┃                                                     madRobot┃", myScore[shotgun])
   color.Blue("┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
