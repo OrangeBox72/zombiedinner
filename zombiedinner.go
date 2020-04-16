@@ -59,6 +59,9 @@ const runner int = 1                                                   // index 
 const green int = 0                                                    // index for green
 const yellow int = 1                                                   // index for yellow
 const red int = 2                                                      // index for red
+const first int 0                                                      // (position) first die in left hand
+const second int 1                                                     // (position) second die in left hand
+const third int 2                                                      // (position) third die in left hand
 const totalNumberOfDice = 13                                           // total # of die
 const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
@@ -80,9 +83,9 @@ var gameMessage string
 var gameOutcome bool
 var roundIdx int
 var gameState bool
-var diePercentages [][]float32
-var handPercentages []int
-var possiblePercentages []int
+var diePercentages [][]float32                                         // mathematical percentages for outcomes of (green,yellow,red) / (brain,runner,shotgun)
+var handPercentages []int                                              // percentages of possible outcome for dice in left hand
+var cupPercentages []int                                               // percentages of future possibilities for dice in cup (This is technically cheating, but i like it)
 var spaces []rune=[]rune("             ")                              // some spaces because i'm too dumb to know how to do this a better way.
                                                                        // PLUS.. i like how 'rune' sounds.   RUNE..  RUNE..
 // FUNCTIONS ===========================================================
@@ -94,7 +97,7 @@ func visualizeDice(dice []int) (visualOutput string){
   for i, v = range dice {
     visualOutput = visualOutput + icon[v][6]
   }
-  visualOutput = visualOutput + string(spaces[0:(12-i)])                // pad spaces to ensure length of 13.
+  visualOutput = visualOutput + string(spaces[0:(12-i)])               // pad spaces to ensure length of 13.
 
   return
 }
@@ -102,13 +105,13 @@ func visualizeDice(dice []int) (visualOutput string){
 func getCupPercentages(c []int, percentageType int) (cupPercs int){
   var v int
   var i int
-  var percs float32
+  var pct float32                                                      // calculated percentage
 
-  percs=0.0
+  pct=0.0
   for i, v = range c {
-    percs=percs+diePercentages[v][percentageType]
+    pct=pct+diePercentages[v][percentageType]
   }
-  cupPercs = int(((percs/float32(i))+0.005)*100)
+  cupPercs = int(((pct/float32(i))+0.005)*100)
   return
 }
 
@@ -207,14 +210,14 @@ func rollResults() {
 
   roundIdx+=1
   fmt.Print(color.BlueString("┃ "))
-  handPercentages = nil
-  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][brain] + diePercentages[myLeftHand[1]][brain] + diePercentages[myLeftHand[2]][brain])/3)+0.005)*100))
-  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][runner] + diePercentages[myLeftHand[1]][runner] + diePercentages[myLeftHand[2]][runner])/3)+0.005)*100))
-  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[0]][shotgun] + diePercentages[myLeftHand[1]][shotgun] + diePercentages[myLeftHand[2]][shotgun])/3)+0.005)*100))
-  possiblePercentages = nil
-  possiblePercentages = append(possiblePercentages, getCupPercentages(myCup, brain) )
-  possiblePercentages = append(possiblePercentages, 33)
-  possiblePercentages = append(possiblePercentages, getCupPercentages(myCup, shotgun) )
+  handPercentages = nil                                                // populate percentages of dice in your left hand
+  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[first]][brain] + diePercentages[myLeftHand[second]][brain] + diePercentages[myLeftHand[third]][brain])/3)+0.005)*100))
+  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[first]][runner] + diePercentages[myLeftHand[second]][runner] + diePercentages[myLeftHand[third]][runner])/3)+0.005)*100))
+  handPercentages = append(handPercentages, int((((diePercentages[myLeftHand[first]][shotgun] + diePercentages[myLeftHand[second]][shotgun] + diePercentages[myLeftHand[third]][shotgun])/3)+0.005)*100))
+  cupPercentages = nil                                                 // populate percentages of diec in cup. Note 'Runner' percentages are always 33%.
+  cupPercentages = append(cupPercentages, getCupPercentages(myCup, brain))
+  cupPercentages = append(cupPercentages, getCupPercentages(myCup, runner))
+  cupPercentages = append(cupPercentages, getCupPercentages(myCup, shotgun))
   for i, v = range myLeftHand {
     rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
     // NOTE:  (I think) the SWITCH order needs to be SHOTGUN, BRAIN, RUNNER to ensure 3-SHOTGUNS will stop before BRAINS are added to score.
@@ -250,7 +253,7 @@ func rollResults() {
   fmt.Printf(" %02d   ┃ %-3s b:%02d%% s:%02d%% ┃ b:%02d%% s:%02d%%  %-13s┃  %-3s   ┃ %-13s",
     roundIdx,
     handVisual, handPercentages[brain], handPercentages[shotgun],
-    possiblePercentages[brain], possiblePercentages[shotgun],
+    cupPercentages[brain], cupPercentages[shotgun],
     visualizeDice(myCup),
     rolledVisual,
     (outOfPlay + string(spaces[0:(13-outOfPlayCounter)])) )
@@ -281,9 +284,9 @@ func rollResults() {
   myLeftHand=myRightHand                                               // now take what is in right hand and put it back in left hand
 }
 
-// MAIN ===============================================================
+// MAIN ================================================================
 func main() {
-  // INIT -------------------------------------------------------------
+  // INIT --------------------------------------------------------------
   gameMessage=color.GreenString("You're a really AWESOME Zombie!")
 
   gameState=true
@@ -297,8 +300,8 @@ func main() {
 
   myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
 
-  myLeftHand=append(myLeftHand, myCup[len(myCup)-1])                   // its the FIRST roll.. get three dice.
-  myCup=myCup[:len(myCup)-1]                                           //   and put in your leftHand
+  myLeftHand=append(myLeftHand, myCup[len(myCup)-1])                   // its the FIRST roll.. get three dice, and put them in your left hand
+  myCup=myCup[:len(myCup)-1]
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
   myCup=myCup[:len(myCup)-1]
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
