@@ -1,15 +1,18 @@
 // name:    zombieDinner
 // author:  johnny
-// version: 2020/03/12. WIP
-// references:
-//   global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
-//   box drawing.  https://en.wikipedia.org/wiki/Box-drawing_character
-//   input handling. https://www.socketloop.com/tutorials/golang-handling-yes-no-quit-query-input
-// notes: actual gameplay still not done.
+// version:
+//   2020-04-15 - cleanup
 //   2020-03-29 - added issue#6 enhancement: (human input)
 //   2020-03-28 - fixed issue#5 enhancement: (outOfPlay stats)
 //   2020-03-26 - fixed issue#4 (almost had X brains - stat)
 //   2020-03-24 - started using ANSI colors.. (happy birthday my-hanh)
+//
+// references:
+//   global constants and slices.  https://qvault.io/2019/10/21/how-to-global-constant-maps-and-slices-in-go/
+//   box drawing.  https://en.wikipedia.org/wiki/Box-drawing_character
+//   input handling. https://www.socketloop.com/tutorials/golang-handling-yes-no-quit-query-input
+//
+
 package main
 
 import (
@@ -20,6 +23,7 @@ import (
   "os"
   "github.com/fatih/color"
 )
+
 /*
  #include <stdio.h>
  #include <unistd.h>
@@ -48,7 +52,7 @@ import (
 )
 
 
-// GLOBAL CONSTANTS ---------------------------------------------------
+// GLOBAL CONSTANTS ----------------------------------------------------
 const brain int = 0                                                    // index for brain
 const shotgun int = 2                                                  // index for shotgun
 const runner int = 1                                                   // index for runner
@@ -60,13 +64,11 @@ const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
 const totalNumberOfRedDice = 3
 
-//var msgYouSurvivedAnotherDay string
-
-// VARS ----------------------------------------------------------------
+// GLOBAL VARS ---------------------------------------------------------
 var rolld6 int
 var x int                                                              // misc var
 var y int                                                              // misc var
-var dieFace [][]int                                                  // two dimensional array listing all possible sides for each colored dice
+var dieFace [][]int                                                    // two dimensional array listing all possible sides for each colored dice
 var icon [][]string
 var myScore []int
 var myCup []int                                                        // dice in cup
@@ -81,8 +83,8 @@ var gameState bool
 var diePercentages [][]float32
 var handPercentages []int
 var possiblePercentages []int
-var spaces []rune=[]rune("             ")                            // some spaces because i'm too dumb to know how to do this a better way.
-                                                                       // PLUS.. i like how 'rune' sounds.
+var spaces []rune=[]rune("             ")                              // some spaces because i'm too dumb to know how to do this a better way.
+                                                                       // PLUS.. i like how 'rune' sounds.   RUNE..  RUNE..
 // FUNCTIONS ===========================================================
 func visualizeDice(dice []int) (visualOutput string){
   // NOTE: space-padding works here because input is integer-slice who's length can properly calculated.
@@ -143,7 +145,7 @@ func prepDieFaces() [][]int {                                          // popula
   return ds
 }
 
-func prepIcons() [][]string {                                            // populate two dimensional array w/each die color and face
+func prepIcons() [][]string {                                          // populate two dimensional array w/each die color and face
   var greenIcons, yellowIcons, redIcons []string
   var ds [][]string
 
@@ -189,7 +191,7 @@ func continueOn() (theResult bool){
 func howMuchBuckshot() {
   if myScore[shotgun] > 2 {
     gameMessage=color.RedString("You have been Destroyed!") + "   (you almost had " + strconv.Itoa(myScore[brain]) + " braaains.)"
-    myScore[brain]=0                                             // no BRAINS for you! You got blasted!
+    myScore[brain]=0                                                   // no BRAINS for you! You got blasted!
     gameOutcome=false
     gameState=false
   } //eoif 3-shotguns
@@ -216,8 +218,8 @@ func rollResults() {
   for i, v = range myLeftHand {
     rolld6=rand.Intn(6)                                                // roll die (RANGOM NUMBER)
     // NOTE:  (I think) the SWITCH order needs to be SHOTGUN, BRAIN, RUNNER to ensure 3-SHOTGUNS will stop before BRAINS are added to score.
-    switch dieFace[v][rolld6] {                                       // was the roll a BRAIN, RUNNER, or SHOTGUN
-      // SHOTGUN ------------------------------------------------------
+    switch dieFace[v][rolld6] {                                        // was the roll a BRAIN, RUNNER, or SHOTGUN
+      // SHOTGUN -------------------------------------------------------
       case shotgun: {
         myScore[shotgun]+=1
         outOfPlay=outOfPlay+icon[v][rolld6]
@@ -227,7 +229,7 @@ func rollResults() {
         //  FIX THIS.. when cup is empty.. but you have 3 dice in hand.. you should get one more roll
         if len(myCup)==0 {gameState=false}
       } //eocase shotgun
-      // BRAIN --------------------------------------------------------
+      // BRAIN ---------------------------------------------------------
       case brain:   {
         if gameState {
           myScore[brain]+=1
@@ -237,7 +239,7 @@ func rollResults() {
           if len(myCup)==0 {gameState=false}
         } //eoifGameState
       } //eocase brain
-      // RUNNER -------------------------------------------------------
+      // RUNNER --------------------------------------------------------
       case runner: {
       } //eocase runner
     } //eoswitch dieFace
@@ -295,14 +297,6 @@ func main() {
 
   myCup = randomizeDiceInCup(totalNumberOfDice)                        // prepopulate the random dice order ie. the order that dice will be pulled from the cup
 
-  // Title ------------------------------------------------------------
-  color.Blue("┏━━━━━━━━━━━━━━━━━━┓")
-  color.Blue("┃  Zombie Dinner   ┃")
-  color.Blue("┣━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-  color.Blue("┃ 'y'- to continue to roll. any other key ends round.                          ┃")
-  color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
-  color.Blue("┃ round ┃     in hand     ┃          in cup           ┃ rolled ┃  out of play  ┃")
-
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])                   // its the FIRST roll.. get three dice.
   myCup=myCup[:len(myCup)-1]                                           //   and put in your leftHand
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
@@ -310,18 +304,23 @@ func main() {
   myLeftHand=append(myLeftHand, myCup[len(myCup)-1])
   myCup=myCup[:len(myCup)-1]
 
+  // Title -------------------------------------------------------------
+  color.Blue("┏━━━━━━━━━━━━━━━━┓")
+  color.Blue("┃ Zombie Dinner  ┃")
+  color.Blue("┣━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+  color.Blue("┃ 'y'- to continue to roll. any other key ends round.                          ┃")
+  color.Blue("┣━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┫")
+  color.Blue("┃ round ┃     in hand     ┃          in cup           ┃ rolled ┃  out of play  ┃")
   for {
     rollResults()
     if !gameState {
       break
     }
   }
-
   color.Blue("┣━━━━━━━┻━━━━━━━━┳━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━━━━┫")
   color.Blue("┃  Stats         ┃ %-67s  ┃\n", gameMessage)
   color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
   color.Blue("┃ Rolls:    %02d   ┃                                                             ┃", roundIdx)
-//  color.Blue("┣━━━━━━━━━━━━━━━━┫                                                             ┃")
   color.Blue("┃ Braaains: %02d   ┃                                                             ┃", myScore[brain])
   color.Blue("┃ Shotguns: %02d   ┃                                                     madRobot┃", myScore[shotgun])
   color.Blue("┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
@@ -333,4 +332,4 @@ func main() {
   }
 
 }
-// END  =========================================================
+// END  ================================================================
