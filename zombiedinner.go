@@ -59,9 +59,9 @@ const runner int = 1                                                   // index 
 const green int = 0                                                    // index for green
 const yellow int = 1                                                   // index for yellow
 const red int = 2                                                      // index for red
-const first int 0                                                      // (position) first die in left hand
-const second int 1                                                     // (position) second die in left hand
-const third int 2                                                      // (position) third die in left hand
+const first int = 0                                                    // (position) first die in left hand
+const second int = 1                                                   // (position) second die in left hand
+const third int = 2                                                    // (position) third die in left hand
 const totalNumberOfDice = 13                                           // total # of die
 const totalNumberOfGreenDice = 6
 const totalNumberOfYellowDice = 4
