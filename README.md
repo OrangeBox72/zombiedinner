@@ -1,7 +1,7 @@
 zombiedinner
 ============
 
-zombiedinner - programming experience - golang style.
+zombie dinner - programming experience - golang style.
 -----------------------------------------------------
 
 ![](images/play.png)
@@ -17,13 +17,15 @@ Well, good luck.
 
 
 _Zombie Dinner_ 
-A dice game where you pull three dice from your plate..
+A digital take on the famous 'Zombie Dice' created by Steve Jackson.
+A game where you pull three dice from your plate/cup..
 roll them and hope for the best!
 Each die-face can be either
 * _Brains_   - Oooh! You caught that huumon. Put it on the dinner plate and eat it!
 * _Runaways_ - That huumon ran away from you (just a poor hungry zombie).
 * _Shot_     - OUCH! You hate those 'BIG BANG Sticks'. I'm not the monster.. they are!
-(You can probably figure out the rules)
+
+(You can probably figure out the rules.. we all know you have played Zombie Dice before!)
 
 Zombie Dinner  takes simple input.
 After each roll.. you will need to type a 'y' to continue to roll,
