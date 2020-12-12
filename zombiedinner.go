@@ -108,10 +108,17 @@ func getCupPercentages(c []int, percentageType int) (cupPercs int){
   var pct float32                                                      // calculated percentage
 
   pct=0.0
-  for i, v = range c {
-    pct=pct+diePercentages[v][percentageType]
+  switch len(c) {
+	case 0:
+		cupPercs = 0
+	case 1:
+		cupPercs = 1
+	default:
+    for i, v = range c {
+      pct=pct+diePercentages[v][percentageType]
+    }
+    cupPercs = int(((pct/float32(i))+0.005)*100)
   }
-  cupPercs = int(((pct/float32(i))+0.005)*100)
   return
 }
 
