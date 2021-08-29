@@ -1,6 +1,7 @@
 // name:    zombieDinner
 // author:  johnny
 // version:
+//	 2021-08-29 - fixed issue#12 - added spacing to handVisual and rolledVisual for when they are less than three die.
 //   2020-12-11 - fixed issue#2 (random large percantages) and #4 (almost had brains stat)
 //   2020-04-15 - cleanup
 //   2020-03-29 - added issue#6 enhancement: (human input)
@@ -269,13 +270,32 @@ func rollResults() {
 		handVisual = handVisual + icon[v][6]
 	} //eofor theRoll
 
+	// if handVisual contains less than 3 die.. then offset w/spaces. since i use escape sequences.. the Len for 0,1,&2 chars are 0,13,26.
+	switch len(handVisual) {
+		case 0:
+		{ handVisual = "   " }
+		case 13:
+		{ handVisual = handVisual + "  " }
+		case 26:
+		{ handVisual = handVisual + " " }
+	}
+	// if rolledVisual contains less than 3 die.. then offset w/spaces. since i use escape sequences.. the Len for 0,1,&2 chars are 0,13,26.
+	switch len(rolledVisual) {
+		case 0:
+		{ rolledVisual = "   " }
+		case 13:
+		{ rolledVisual = rolledVisual + "  " }
+		case 26:
+		{ rolledVisual = rolledVisual + " " }
+	}
+
 	fmt.Printf(" %02d   ┃ %-3s b:%02d%% s:%02d%% ┃ b:%02d%% s:%02d%%  %-13s┃  %-3s   ┃ %-13s",
 		roundIdx,
 		handVisual, handPercentages[brain], handPercentages[shotgun],
 		cupPercentages[brain], cupPercentages[shotgun],
 		visualizeDice(myCup),
 		rolledVisual,
-		(outOfPlay + string(spaces[0:(13-outOfPlayCounter)])))
+		(outOfPlay + string(spaces[0:(13-outOfPlayCounter)]))  )
 
 	fmt.Print(color.BlueString(" ┃\n"))
 	if gameState { // if we havent already reached 3 shotguns..
