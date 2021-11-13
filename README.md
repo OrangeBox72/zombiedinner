@@ -48,3 +48,9 @@ Do not use _Zombie Dinner_ in the event of a real zombie apocalypse!
 **Requirements**
 Please read the *INSTALL.MD* file for the requirements and info on how to get started with GO.
 
+**Final Words**
+I do not know of a native way to key-parse a single key w/o RETURN.
+So, I use some C-Code in this GO program.  I know that this works fine on MACOS,
+and would expect it to work on Linux..  but I do not know if it will work on WINDOWS.
+
+M.R.
