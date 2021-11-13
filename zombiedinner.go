@@ -26,9 +26,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	// for random numbers
-	// string conversions
-	// for random seed
 )
 
 /*
@@ -36,7 +33,7 @@ import (
  #include <unistd.h>
  #include <termios.h>
  char getch(){
-          char ch = 0;
+       char ch = 0;
        struct termios old = {0};
        fflush(stdout);
        if( tcgetattr(0, &old) < 0 ) perror("tcsetattr()");
